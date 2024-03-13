@@ -1,6 +1,6 @@
 # Hand Gesture based AC Light control System
 <br>
-This system controls state (on/off) and brightness level of AC light bulb by detecting specific hand gesture using Computer Vision.
+This system controls state (on/off) and brightness level of AC light bulb by detecting specific hand gesture using Computer Vision. The dataset and Computer Vision Model for this project is available at <a href="https://universe.roboflow.com/tim-4ijf0/hand-gestures-cjowr">Roboflow Universe</a>.
 <br></br>
 <h3>Steps to Run Code</h3>
 <ul>
