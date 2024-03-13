@@ -2,96 +2,91 @@
 #include "PubSubClient.h"
 #include "RBDdimmer.h"
 
-#define zerocross D6
-#define outputPin D7
+#define zerocross D1
+#define outputPin D2
 
-
-const char *ssid =  "Tim";    
-const char *pass =  "7e7ce00618a5";
+const char* ssid = "WIFI_SSID";
+const char* password =  "WIFI_PASSWORD";
 const char* mqttServer = "broker.hivemq.com";
-int mqttPort = 1883;
+const int mqttPort = 1883;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 dimmerLamp dimmer(outputPin, zerocross);
 
+void callback(char* topic, byte* payload, unsigned int length) {
+    String command = "";
+      
+    for (int i = 0; i < length; i++) {
+      command += (char)payload[i];
+   }
 
-void mqttReconnect() {
+   static String previousCommand = "";
+
+  if (command != previousCommand) {
+    
+    Serial.print("Message arrived in topic: ");
+    Serial.println(topic);
+    Serial.print("Message:");
+    
+    if (strcmp(command.c_str(), "on") == 0) {
+        Serial.println(command);
+        dimmer.setState(ON);
+    } else if (strcmp(command.c_str(), "off") == 0) {
+        Serial.println(command);
+        dimmer.setState(OFF);
+    } else if (strcmp(command.c_str(), "high") == 0) {
+        Serial.println(command);
+        dimmer.setPower(100);
+        Serial.println("Brightness set to 100%");
+    } else if (strcmp(command.c_str(), "mid") == 0) {
+        Serial.println(command);
+        dimmer.setPower(75);
+        Serial.println("Brightness set to 75%");
+    } else if (strcmp(command.c_str(), "low") == 0) {
+        Serial.println(command);
+        dimmer.setPower(50);
+        Serial.println("Brightness set to 50%");
+    } else if (strcmp(command.c_str(), "dim") == 0) {
+        Serial.println(command);
+        dimmer.setPower(25);
+        Serial.println("Brightness set to 25%");
+    }
+    previousCommand = command;
+    Serial.println("----------------------------------------------------");
+  }
+}
+ 
+void setup() {
+ 
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi..");
+  }
+  Serial.println("Connected to the WiFi network");
+ 
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+ 
   while (!client.connected()) {
-   Serial.println("Connected to the WiFi network");
-   client.setServer(mqttServer, mqttPort);
-   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
-     if (client.connect("parking-device-01")) {
-       Serial.println("connected");
+ 
+    if (client.connect("lightcontrol-001" )) {
+       Serial.println("connected");  
      } else {
+ 
       Serial.print("failed with state ");
       Serial.print(client.state());
       delay(2000);
     }
   }
-  }
+ 
+  client.subscribe("lightcmd");
 }
-
-
-void setup() {
- Serial.begin(115200);
- dimmer.begin(NORMAL_MODE, ON);
- Serial.println("Starting...");
-  delay(1000);
-  
-  WiFi.begin(ssid, pass);
-   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("Connected to the WiFi network");
-  mqttReconnect();
-}
-
-void callback(char* topic, byte* message, unsigned int length) {
-  Serial.print("Message arrived on topic: ");
-  Serial.print(topic);
-  Serial.print(". Message: ");
-  String stMessage;
-  
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)message[i]);
-    stMessage += (char)message[i];
-  }
-  Serial.println();
-
-  if (String(topic) == "lightcmd") {
-    Serial.print("Changing output to ");
-    if(stMessage == "on"){
-      Serial.println("on");
-       dimmer.setState(ON);
-    }
-    else if(stMessage == "off"){
-      Serial.println("off");
-      dimmer.setState(OFF);
-    }
-    else if(stMessage == "high"){
-      Serial.println("high");
-      dimmer.setPower(100);
-    }
-    else if(stMessage == "mid"){
-      Serial.println("mid");
-      dimmer.setPower(75);
-    }
-    else if(stMessage == "low"){
-      Serial.println("low");
-      dimmer.setPower(50);
-    }
-    else if(stMessage == "dim"){
-      Serial.println("dim");
-      dimmer.setPower(25);
-    }
-  }
-}
-
+ 
 void loop() {
- client.loop();
- delay(100);
+  client.loop();
 }
